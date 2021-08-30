@@ -30,4 +30,5 @@ class FramelessWindows : public QWidget {
 
  private:
   QScopedPointer<DPIMonitor> sdm;
+  int max_min_count;
 };

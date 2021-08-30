@@ -11,7 +11,7 @@
 #include <QtWinExtras/QtWin>
 
 FramelessWindows::FramelessWindows(QWidget* parent)
-    : QWidget(parent), sdm(new DPIMonitor) {
+    : QWidget(parent), sdm(new DPIMonitor), max_min_count(0) {
   ui.setupUi(this);
 
   setWindowFlags(Qt::FramelessWindowHint);
@@ -63,17 +63,31 @@ FramelessWindows::FramelessWindows(QWidget* parent)
           [this](QSystemTrayIcon::ActivationReason reason) {
             switch (reason) {
               case QSystemTrayIcon::Trigger:
-              case QSystemTrayIcon::DoubleClick:
+              case QSystemTrayIcon::DoubleClick: {
                 this->raise();
                 this->show();
-                break;
+
+#ifdef Q_OS_WIN
+                HWND setToHwnd = (HWND)winId();
+                HWND hForgroundWnd = GetForegroundWindow();
+                DWORD dwForeID =
+                    ::GetWindowThreadProcessId(hForgroundWnd, NULL);
+                DWORD dwCurID = ::GetCurrentThreadId();
+
+                ::AttachThreadInput(dwCurID, dwForeID, TRUE);
+                ::ShowWindow(setToHwnd, max_min_count > 0 ? SW_SHOWMAXIMIZED
+                                                          : SW_SHOWNORMAL);
+                ::SetForegroundWindow(setToHwnd);
+                ::AttachThreadInput(dwCurID, dwForeID, FALSE);
+#endif  // Q_WIN
+              } break;
               case QSystemTrayIcon::MiddleClick:
                 break;
               default:;
             }
           });
 
-   trayIcon->show();
+  trayIcon->show();
   /* ui.label->setPixmap(
        QPixmap(QString::fromLocal8Bit("./Î¢ĞÅÍ¼Æ¬_20210320114323.png")));*/
   formInit();
@@ -124,19 +138,33 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
 
     case WM_GETMINMAXINFO: {
       if (::IsZoomed(msg->hwnd)) {
+        if (max_min_count == 0) {
+          ++max_min_count;
+        }
+
         RECT frame = {0, 0, 0, 0};
         AdjustWindowRectEx(&frame, WS_OVERLAPPEDWINDOW, FALSE, 0);
         frame.left = abs(frame.left);
         frame.top = abs(frame.bottom);
         widget->setContentsMargins(frame.left, frame.top, frame.right,
                                    frame.bottom);
+        *result =
+            ::DefWindowProc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+        return true;
+      } else if (::IsIconic(msg->hwnd)) {
+        if (max_min_count > 0) {
+          ++max_min_count;
+        }
       } else {
-        widget->setContentsMargins(0, 0, 0, 0);
+        if (max_min_count > 0) {
+          max_min_count = 0;
+        }
       }
-
+      widget->setContentsMargins(0, 0, 0, 0);
       *result =
           ::DefWindowProc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
-      return true;
+      return false;
+
     } break;
 
     default:

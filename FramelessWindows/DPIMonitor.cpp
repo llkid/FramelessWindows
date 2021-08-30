@@ -80,13 +80,14 @@ QString DPIMonitor::getScaleQSS(QStringView strView, qreal dpi) {
   if (!strView.isEmpty()) {
     auto str = strView.toString();
     QRegularExpression re("(\\d+)(pt|px)");
-    QRegularExpressionMatch match = re.match(str, 0);
-    if (match.hasMatch()) {
-      return str.replace(match.captured(0),
-                         QString::number(static_cast<int>(
-                             match.captured(1).toDouble() * dpi)) +
-                             match.captured(2));
+    auto it = re.globalMatch(str, 0);
+    while (it.hasNext()) {
+      auto match = it.next();
+      str.replace(match.captured(0), QString::number(static_cast<int>(
+                                         match.captured(1).toDouble() * dpi)) +
+                                         match.captured(2));
     }
+    return str;
   }
 
   return QString();
