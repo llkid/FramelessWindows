@@ -5,7 +5,6 @@
 
 #include <QtWidgets/QWidget>
 
-#include "DPIMonitor.h"
 #include "ui_FramelessWindows.h"
 
 class FramelessWindows : public QWidget {
@@ -23,12 +22,9 @@ class FramelessWindows : public QWidget {
   LRESULT calculateBorder(const QPoint& pt);
   void closeEvent(QCloseEvent* event) override;
 
-  virtual void showEvent(QShowEvent* event) override;
+ private:
+  void formInit(double scale);
 
  private:
-  void formInit();
-
- private:
-  QScopedPointer<DPIMonitor> sdm;
   int max_min_count;
 };

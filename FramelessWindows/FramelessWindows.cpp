@@ -10,8 +10,10 @@
 #include <QMenu>
 #include <QtWinExtras/QtWin>
 
+#include "DPIMonitor.h"
+
 FramelessWindows::FramelessWindows(QWidget* parent)
-    : QWidget(parent), sdm(new DPIMonitor), max_min_count(0) {
+    : QWidget(parent), max_min_count(0) {
   ui.setupUi(this);
 
   setWindowFlags(Qt::FramelessWindowHint);
@@ -23,8 +25,6 @@ FramelessWindows::FramelessWindows(QWidget* parent)
 
   bool enabled = QtWin::isCompositionEnabled();
   if (enabled) {
-    HWND hwnd = (HWND)this->winId();
-    DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
     ::SetWindowLong(hwnd, GWL_STYLE,
                     style | WS_THICKFRAME | WS_CAPTION | WS_BORDER);
     QtWin::extendFrameIntoClientArea(this, 1, 1, 1, 1);
@@ -87,10 +87,13 @@ FramelessWindows::FramelessWindows(QWidget* parent)
             }
           });
 
-  trayIcon->show();
+  // trayIcon->show();
   /* ui.label->setPixmap(
        QPixmap(QString::fromLocal8Bit("./微信图片_20210320114323.png")));*/
-  formInit();
+
+  DPIMonitor::GetInstance()->setOriginalWindowSize(QSize(600, 400));
+  REGISTERDPIOBJ()
+  ("FramelessWindows", [this](double scale) { formInit(scale); });
 }
 
 bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
@@ -241,12 +244,26 @@ void FramelessWindows::closeEvent(QCloseEvent* event) {
   }
 }
 
-void FramelessWindows::showEvent(QShowEvent* /*event*/) {
-  // 保证所有控件都已经缩放过
-  sdm->setWidget(this);
-}
+void FramelessWindows::formInit(double scale) {
+  this->setMinimumSize(SCALEUP(600 * scale), SCALEUP(400 * scale));
+  ui.pushButton->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
+  ui.comboBox->setFixedSize(SCALEUP(200 * scale), (30 * scale));
 
-void FramelessWindows::formInit() {
-  ui.pushButton->setFixedSize(100, 30);
-  this->setMinimumSize(600, 400);
+  ui.label->setStyleSheet(QString::fromUtf8(
+      "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
+          .arg(SCALEUP(20 * scale))
+  );
+
+  ui.label_2->setStyleSheet(QString::fromUtf8(
+      "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
+          .arg(SCALEUP(33 * scale))
+  );
+
+  QFont pushButtonFont = ui.pushButton->font();
+  pushButtonFont.setPointSize(SCALEUP(9 * scale));
+  ui.pushButton->setFont(pushButtonFont);
+
+  QFont comboBoxFont = ui.comboBox->font();
+  comboBoxFont.setPointSize(SCALEUP(9 * scale));
+  ui.comboBox->setFont(comboBoxFont);
 }

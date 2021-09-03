@@ -88,7 +88,7 @@
       <item>
        <widget class="QLabel" name="label">
         <property name="styleSheet">
-         <string notr="true">font: 20pt &quot;微软雅黑&quot;;</string>
+         <string notr="true">font: 20px &quot;微软雅黑&quot;;</string>
         </property>
         <property name="text">
          <string>微软雅黑</string>
