@@ -1,16 +1,19 @@
-#include "FramelessWindows.h"
-#include <QtWidgets/QApplication>
-
+#include <shellscalingapi.h>
 #include <qdebug.h>
 #include <qscreen.h>
-#include <QSplashScreen>
 #include <qtimer.h>
 
-#pragma execution_character_set("utf-8")
+#include <QSplashScreen>
+#include <QtWidgets/QApplication>
 
-//class Application : public QApplication
+#include "FramelessWindows.h"
+
+#pragma execution_character_set("utf-8")
+#pragma comment(lib, "Shcore.lib")
+
+// class Application : public QApplication
 //{
-//public:
+// public:
 //    QWidget* widget = nullptr;
 //
 //    Application(int& argc, char** argv)
@@ -20,26 +23,26 @@
 //    }
 //};
 
-int main(int argc, char *argv[])
-{
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QApplication a(argc, argv);
+int main(int argc, char *argv[]) {
+  SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+  QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+  QApplication a(argc, argv);
 
-    /*QPixmap pixmap("D:/表情包/v2-78c30881ee13bc6389d56575f016574d_1440w.jpg");
-    QSplashScreen splash(pixmap);
-    splash.show();
-    a.processEvents();
+  /*QPixmap pixmap("D:/表情包/v2-78c30881ee13bc6389d56575f016574d_1440w.jpg");
+  QSplashScreen splash(pixmap);
+  splash.show();
+  a.processEvents();
 
-    QScopedPointer<QWidget> widget(new FramelessWindows);
+  QScopedPointer<QWidget> widget(new FramelessWindows);
 
-	QTimer::singleShot(3000, [&] {
-		splash.close();
-		widget->show();
-		a.beep();
-		});*/
+      QTimer::singleShot(3000, [&] {
+              splash.close();
+              widget->show();
+              a.beep();
+              });*/
 
-    FramelessWindows w;
-    w.show();
+  FramelessWindows w;
+  w.show();
 
-    return a.exec();
+  return a.exec();
 }
