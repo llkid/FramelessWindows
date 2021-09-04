@@ -26,5 +26,6 @@ class FramelessWindows : public QWidget {
   void formInit(double scale);
 
  private:
+  int borderSize;
   int max_min_count;
 };

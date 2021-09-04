@@ -1,8 +1,10 @@
 #include "FramelessWindows.h"
 
+#include <qapplication.h>
 #include <qdebug.h>
 #include <qmessagebox.h>
 #include <qoperatingsystemversion.h>
+#include <qscreen.h>
 #include <qstyle.h>
 #include <windowsx.h>
 
@@ -13,7 +15,7 @@
 #include "DPIMonitor.h"
 
 FramelessWindows::FramelessWindows(QWidget* parent)
-    : QWidget(parent), max_min_count(0) {
+    : QWidget(parent), borderSize(4), max_min_count(0) {
   ui.setupUi(this);
 
   setWindowFlags(Qt::FramelessWindowHint);
@@ -87,7 +89,7 @@ FramelessWindows::FramelessWindows(QWidget* parent)
             }
           });
 
-  // trayIcon->show();
+   //trayIcon->show();
   /* ui.label->setPixmap(
        QPixmap(QString::fromLocal8Bit("./Î¢ÐÅÍ¼Æ¬_20210320114323.png")));*/
 
@@ -183,7 +185,6 @@ LRESULT FramelessWindows::calculateBorder(const QPoint& pt) {
   if (::IsZoomed((HWND)this->winId())) {
     return HTCLIENT;
   }
-  int borderSize = 4;
   int cx = this->size().width();
   int cy = this->size().height();
 
@@ -249,15 +250,15 @@ void FramelessWindows::formInit(double scale) {
   ui.pushButton->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
   ui.comboBox->setFixedSize(SCALEUP(200 * scale), (30 * scale));
 
-  ui.label->setStyleSheet(QString::fromUtf8(
-      "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
-          .arg(SCALEUP(20 * scale))
-  );
+  ui.label->setStyleSheet(
+      QString::fromUtf8(
+          "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
+          .arg(SCALEUP(20 * scale)));
 
-  ui.label_2->setStyleSheet(QString::fromUtf8(
-      "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
-          .arg(SCALEUP(33 * scale))
-  );
+  ui.label_2->setStyleSheet(
+      QString::fromUtf8(
+          "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
+          .arg(SCALEUP(33 * scale)));
 
   QFont pushButtonFont = ui.pushButton->font();
   pushButtonFont.setPointSize(SCALEUP(9 * scale));
@@ -266,4 +267,8 @@ void FramelessWindows::formInit(double scale) {
   QFont comboBoxFont = ui.comboBox->font();
   comboBoxFont.setPointSize(SCALEUP(9 * scale));
   ui.comboBox->setFont(comboBoxFont);
+
+  borderSize = SCALEUP(borderSize * scale);
+  // ·ÀÖ¹ÍÐÅÌÍ¼±êÄ£ºý
+  trayIcon->setIcon(qApp->style()->standardIcon(QStyle::SP_TitleBarMenuButton));
 }

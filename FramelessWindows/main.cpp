@@ -25,7 +25,8 @@
 
 int main(int argc, char *argv[]) {
   SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-  QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+  // 自定义dpi缩放不能设置AA_EnableHighDpiScaling属性
+  //QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
   QApplication a(argc, argv);
 
   /*QPixmap pixmap("D:/表情包/v2-78c30881ee13bc6389d56575f016574d_1440w.jpg");
