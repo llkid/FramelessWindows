@@ -6,11 +6,18 @@
 #include <qoperatingsystemversion.h>
 #include <qscreen.h>
 #include <qstyle.h>
+
+#ifdef Q_OS_WIN
+
+#include <dwmapi.h>
 #include <windowsx.h>
+
+#pragma comment(lib, "Dwmapi.lib")
+
+#endif  // Q_OS_WIN
 
 #include <QCloseEvent>
 #include <QMenu>
-#include <QtWinExtras/QtWin>
 
 #include "DPIMonitor.h"
 
@@ -18,23 +25,41 @@ FramelessWindows::FramelessWindows(QWidget* parent)
     : QWidget(parent), borderSize(4), max_min_count(0) {
   ui.setupUi(this);
 
-  setWindowFlags(Qt::FramelessWindowHint);
+  setWindowFlags(this->windowFlags() | Qt::FramelessWindowHint);
+
+#ifdef Q_OS_WIN
 
   HWND hwnd = reinterpret_cast<HWND>(this->winId());
   DWORD style = GetWindowLong(hwnd, GWL_STYLE);
   SetWindowLongPtr(hwnd, GWL_STYLE,
                    style | WS_MAXIMIZEBOX | WS_THICKFRAME | WS_CAPTION);
 
-  bool enabled = QtWin::isCompositionEnabled();
-  if (enabled) {
-    ::SetWindowLong(hwnd, GWL_STYLE,
-                    style | WS_THICKFRAME | WS_CAPTION | WS_BORDER);
-    QtWin::extendFrameIntoClientArea(this, 1, 1, 1, 1);
+  BOOL pfEnabled;
+  DwmIsCompositionEnabled(&pfEnabled);
+  if (pfEnabled) {
+    SetWindowLongPtr(
+        hwnd, GWL_STYLE,
+        style | WS_THICKFRAME | WS_CAPTION | WS_BORDER | WS_MAXIMIZEBOX);
+    MARGINS margins{1, 1, 1, 1};
+    DwmExtendFrameIntoClientArea(hwnd, &margins);
   }
 
-  // connect(ui.pushButton, &QPushButton::clicked, qApp,
-  // &QCoreApplication::quit);
-  connect(ui.pushButton, &QPushButton::clicked, this, &FramelessWindows::close);
+#endif  // Q_OS_WIN
+
+  connect(ui.bt_close, &QPushButton::clicked, this, &FramelessWindows::close);
+  connect(ui.bt_maxmize, &QPushButton::clicked, [this] {
+    /*auto hwnd = reinterpret_cast<HWND>(winId());
+    ShowWindow(hwnd, IsZoomed(hwnd) ? SW_SHOWNORMAL : SW_SHOWMAXIMIZED);*/
+    if (!this->isMaximized()) {
+      this->showMaximized();
+    } else {
+      this->showNormal();
+    }
+  });
+  connect(ui.bt_minmize, &QPushButton::clicked, [this] {
+    // ShowWindow(reinterpret_cast<HWND>(winId()), SW_SHOWMINIMIZED);
+    this->showMinimized();
+  });
 
   auto current = QOperatingSystemVersion::current();
   qDebug() << "SystemVersion" << current;
@@ -89,7 +114,7 @@ FramelessWindows::FramelessWindows(QWidget* parent)
             }
           });
 
-   //trayIcon->show();
+  //trayIcon->show();
   /* ui.label->setPixmap(
        QPixmap(QString::fromLocal8Bit("./Œ¢–≈Õº∆¨_20210320114323.png")));*/
 
@@ -105,9 +130,6 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
 
   MSG* msg = static_cast<MSG*>(message);
 
-  QWidget* widget = QWidget::find(reinterpret_cast<WId>(msg->hwnd));
-  if (!widget) return false;
-
   switch (msg->message) {
     case WM_NCCALCSIZE: {
       *result = 0;
@@ -122,7 +144,7 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
       *result = calculateBorder(pt);
       if (*result == HTCLIENT) {
         QWidget* tempWidget = this->childAt(pt);
-        if (tempWidget == NULL) {
+        if (tempWidget == ui.widget_2) {// ±ÍÃ‚¿∏
           *result = HTCAPTION;
         }
       }
@@ -151,7 +173,7 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
         AdjustWindowRectEx(&frame, WS_OVERLAPPEDWINDOW, FALSE, 0);
         frame.left = abs(frame.left);
         frame.top = abs(frame.bottom);
-        widget->setContentsMargins(frame.left, frame.top, frame.right,
+        this->setContentsMargins(frame.left, frame.top, frame.right,
                                    frame.bottom);
         *result =
             ::DefWindowProc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
@@ -165,7 +187,7 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
           max_min_count = 0;
         }
       }
-      widget->setContentsMargins(0, 0, 0, 0);
+      this->setContentsMargins(0, 0, 0, 0);
       *result =
           ::DefWindowProc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
       return false;
@@ -247,8 +269,11 @@ void FramelessWindows::closeEvent(QCloseEvent* event) {
 
 void FramelessWindows::formInit(double scale) {
   this->setMinimumSize(SCALEUP(600 * scale), SCALEUP(400 * scale));
-  ui.pushButton->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
-  ui.comboBox->setFixedSize(SCALEUP(200 * scale), (30 * scale));
+  ui.bt_close->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
+  ui.bt_maxmize->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
+  ui.bt_minmize->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
+  ui.comboBox->setFixedSize(SCALEUP(200 * scale), SCALEUP(30 * scale));
+  ui.widget_2->setFixedHeight(SCALEUP(30 * scale));
 
   ui.label->setStyleSheet(
       QString::fromUtf8(
@@ -260,9 +285,11 @@ void FramelessWindows::formInit(double scale) {
           "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
           .arg(SCALEUP(33 * scale)));
 
-  QFont pushButtonFont = ui.pushButton->font();
+  QFont pushButtonFont = ui.bt_close->font();
   pushButtonFont.setPointSize(SCALEUP(9 * scale));
-  ui.pushButton->setFont(pushButtonFont);
+  ui.bt_close->setFont(pushButtonFont);
+  ui.bt_maxmize->setFont(pushButtonFont);
+  ui.bt_minmize->setFont(pushButtonFont);
 
   QFont comboBoxFont = ui.comboBox->font();
   comboBoxFont.setPointSize(SCALEUP(9 * scale));
