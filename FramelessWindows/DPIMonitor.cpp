@@ -10,21 +10,19 @@ QScopedPointer<DPIMonitor> DPIMonitor::self;
 
 DPIMonitor::DPIMonitor(QObject* parent)
     : QObject(parent), originalWindowSize(0, 0), maxScalingFactor(1.75) {
-  connect(
-      qApp->primaryScreen(), &QScreen::logicalDotsPerInchChanged, this,
-      [this](qreal dpi) {
-        double scale = dpi / 96;
-        if (scale > maxScalingFactor) {
-          scale = maxScalingFactor;
-        }
+  connect(qApp->primaryScreen(), &QScreen::logicalDotsPerInchChanged,
+          [this](qreal dpi) {
+            double scale = dpi / 96;
+            if (scale > maxScalingFactor) {
+              scale = maxScalingFactor;
+            }
 
-        auto it = widgetsScaltor.constBegin();
-        while (it != widgetsScaltor.constEnd()) {
-          it.value()(scale);
-          ++it;
-        }
-      },
-      Qt::UniqueConnection);
+            auto it = widgetsScaltor.constBegin();
+            while (it != widgetsScaltor.constEnd()) {
+              it.value()(scale);
+              ++it;
+            }
+          });
 
   connect(qApp->primaryScreen(), &QScreen::availableGeometryChanged,
           [this](const QRect& geometry) {
