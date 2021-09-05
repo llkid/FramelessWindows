@@ -92,6 +92,7 @@ FramelessWindows::FramelessWindows(QWidget* parent)
               case QSystemTrayIcon::Trigger:
               case QSystemTrayIcon::DoubleClick: {
                 this->raise();
+                this->activateWindow();
                 this->show();
 
 #ifdef Q_OS_WIN
@@ -109,12 +110,13 @@ FramelessWindows::FramelessWindows(QWidget* parent)
 #endif  // Q_WIN
               } break;
               case QSystemTrayIcon::MiddleClick:
+                qDebug() << "MiddleClick";
                 break;
               default:;
             }
           });
 
-  //trayIcon->show();
+  trayIcon->show();
   /* ui.label->setPixmap(
        QPixmap(QString::fromLocal8Bit("./微信图片_20210320114323.png")));*/
 
@@ -144,7 +146,7 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
       *result = calculateBorder(pt);
       if (*result == HTCLIENT) {
         QWidget* tempWidget = this->childAt(pt);
-        if (tempWidget == ui.widget_2) {// 标题栏
+        if (tempWidget == ui.widget_2) {  // 标题栏
           *result = HTCAPTION;
         }
       }
@@ -174,7 +176,7 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
         frame.left = abs(frame.left);
         frame.top = abs(frame.bottom);
         this->setContentsMargins(frame.left, frame.top, frame.right,
-                                   frame.bottom);
+                                 frame.bottom);
         *result =
             ::DefWindowProc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
         return true;
