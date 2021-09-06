@@ -15,7 +15,7 @@ class FramelessWindows : public QWidget {
 
  private:
   Ui::FramelessWindowsClass ui;
-  QSystemTrayIcon* trayIcon;
+  QScopedPointer<QSystemTrayIcon> trayIcon;
 
   bool nativeEvent(const QByteArray& eventType, void* message,
                    long* result) override;

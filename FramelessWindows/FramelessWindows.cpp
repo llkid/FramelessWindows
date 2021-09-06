@@ -5,7 +5,6 @@
 #include <qmessagebox.h>
 #include <qoperatingsystemversion.h>
 #include <qscreen.h>
-#include <qstyle.h>
 
 #ifdef Q_OS_WIN
 
@@ -74,23 +73,27 @@ FramelessWindows::FramelessWindows(QWidget* parent)
        QOperatingSystemVersion::IOS, QOperatingSystemVersion::Android});
   qDebug() << (on ? "os type is right" : "os type is incorrect");
 
-  trayIcon = new QSystemTrayIcon(
-      QApplication::style()->standardIcon(QStyle::SP_TitleBarMenuButton), this);
+  trayIcon.reset(new QSystemTrayIcon(
+      QApplication::style()->standardIcon(QStyle::SP_TitleBarMenuButton)));
   QMenu* menu = new QMenu(this);
   connect(menu->addAction("show"), &QAction::triggered, this,
           &FramelessWindows::show);
-  connect(menu->addAction("quit"), &QAction::triggered, [this] {
-    trayIcon->deleteLater();
-    qApp->quit();
-  });
+  connect(menu->addAction("quit"), &QAction::triggered, qApp,
+          &QApplication::quit);
   trayIcon->setContextMenu(menu);
   trayIcon->setToolTip("FramelessWindows");
 
-  connect(trayIcon, &QSystemTrayIcon::activated,
+  connect(trayIcon.get(), &QSystemTrayIcon::activated,
           [this](QSystemTrayIcon::ActivationReason reason) {
             switch (reason) {
-              case QSystemTrayIcon::Trigger:
-              case QSystemTrayIcon::DoubleClick: {
+              case QSystemTrayIcon::Unknown:
+                break;
+              case QSystemTrayIcon::Context:
+                qDebug() << "context";
+                break;
+              case QSystemTrayIcon::DoubleClick:
+                break;
+              case QSystemTrayIcon::Trigger: {
                 this->raise();
                 this->activateWindow();
                 this->show();
@@ -108,11 +111,12 @@ FramelessWindows::FramelessWindows(QWidget* parent)
                 ::SetForegroundWindow(setToHwnd);
                 ::AttachThreadInput(dwCurID, dwForeID, FALSE);
 #endif  // Q_WIN
+
               } break;
               case QSystemTrayIcon::MiddleClick:
-                qDebug() << "MiddleClick";
                 break;
-              default:;
+              default:
+                break;
             }
           });
 
@@ -172,7 +176,8 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
         }
 
         RECT frame = {0, 0, 0, 0};
-        AdjustWindowRectEx(&frame, WS_OVERLAPPEDWINDOW, FALSE, 0);
+        AdjustWindowRectExForDpi(&frame, WS_OVERLAPPEDWINDOW, FALSE, 0,
+                                 GetDpiForWindow(msg->hwnd));
         frame.left = abs(frame.left);
         frame.top = abs(frame.bottom);
         this->setContentsMargins(frame.left, frame.top, frame.right,
