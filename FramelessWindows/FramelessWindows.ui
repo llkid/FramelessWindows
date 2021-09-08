@@ -13,6 +13,11 @@
   <property name="windowTitle">
    <string>FramelessWindows</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget#FramelessWindowsClass {
+background-color: lightblue;
+}</string>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <widget class="QWidget" name="widget_2" native="true">
@@ -21,6 +26,27 @@
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton#bt_close,#bt_maxmize,#bt_minmize {
+background-color: lightyellow;
+border-style: outset;
+border-width: 2px;
+border-radius: 10px;
+border-color: beige;
+font: bold 14px;
+min-width: 5em;
+padding: 6px;
+min-height:1em;
+}
+QPushButton#bt_close:pressed,#bt_maxmize:pressed,#bt_minmize:pressed {
+background-color: rgb(224, 0, 0);
+border-style: inset;
+color:yellow;
+}
+QPushButton#bt_close:hover,#bt_maxmize:hover,#bt_minmize:hover{
+color: lightblue;
+}</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="leftMargin">
@@ -65,7 +91,7 @@
       <item>
        <widget class="QPushButton" name="bt_close">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -84,22 +110,31 @@
       <item>
        <widget class="QComboBox" name="comboBox">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <property name="minimumSize">
-         <size>
-          <width>200</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>200</width>
-          <height>30</height>
-         </size>
+        <property name="styleSheet">
+         <string notr="true">QComboBox{
+min-height:2em;
+max-width:10em;
+background-color:lightyellow;
+border:none;
+}
+QComboBox::drop-down{
+subcontrol-origin: padding;
+subcontrol-position: top right;
+width: 15px;
+border:none;
+}
+QComboBox QAbstractItemView {
+border: 2px solid darkgray;
+selection-background-color: lightgray;
+}
+QComboBox QAbstractItemView::item {
+height:2em;
+}</string>
         </property>
         <item>
          <property name="text">

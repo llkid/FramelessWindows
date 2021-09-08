@@ -9,6 +9,7 @@
 #ifdef Q_OS_WIN
 
 #include <dwmapi.h>
+#include <tchar.h>
 #include <windowsx.h>
 
 #pragma comment(lib, "Dwmapi.lib")
@@ -25,6 +26,7 @@ FramelessWindows::FramelessWindows(QWidget* parent)
   ui.setupUi(this);
 
   setWindowFlags(this->windowFlags() | Qt::FramelessWindowHint);
+  setWindowTitle("FramelessWindows");
 
 #ifdef Q_OS_WIN
 
@@ -39,8 +41,41 @@ FramelessWindows::FramelessWindows(QWidget* parent)
     SetWindowLongPtr(
         hwnd, GWL_STYLE,
         style | WS_THICKFRAME | WS_CAPTION | WS_BORDER | WS_MAXIMIZEBOX);
+
     MARGINS margins{1, 1, 1, 1};
     DwmExtendFrameIntoClientArea(hwnd, &margins);
+
+    // DWM_BLURBEHIND bb = {0};
+    // HRGN hRgn = CreateRectRgn(0, 0, -1, -1);  //应用毛玻璃的矩形范围，
+    ////参数(0,0,-1,-1)可以让整个窗口客户区变成透明的，而鼠标是可以捕获到透明的区域
+    // bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+    // bb.hRgnBlur = hRgn;
+    // bb.fEnable = TRUE;
+    // DwmEnableBlurBehindWindow(hwnd, &bb);
+    // setAttribute(Qt::WA_TranslucentBackground);
+
+    // HRESULT hr = S_OK;
+    // HTHUMBNAIL thumbnail = NULL;
+    // HWND hWndSrc = FindWindow(_T("FramelessWindows"), NULL);
+    // hr = DwmRegisterThumbnail(hWndDst, hwnd, &thumbnail);
+    // if (SUCCEEDED(hr)) {
+    //  RECT dest;
+    //  ::GetClientRect(hWndDst, &dest);
+
+    //  DWM_THUMBNAIL_PROPERTIES dskThumbProps;
+    //  dskThumbProps.dwFlags = DWM_TNP_RECTDESTINATION | DWM_TNP_VISIBLE |
+    //                          DWM_TNP_SOURCECLIENTAREAONLY;
+    //  dskThumbProps.fSourceClientAreaOnly = FALSE;
+    //  dskThumbProps.fVisible = TRUE;
+    //  dskThumbProps.opacity = (255 * 70) / 100;
+    //  dskThumbProps.rcDestination = dest;
+
+    //  hr = DwmUpdateThumbnailProperties(thumbnail, &dskThumbProps);
+    //  if (SUCCEEDED(hr)) {
+    //    // ...
+    //    qDebug() << "DwmUpdateThumbnailProperties success!!!";
+    //  }
+    //}
   }
 
 #endif  // Q_OS_WIN
@@ -120,13 +155,19 @@ FramelessWindows::FramelessWindows(QWidget* parent)
             }
           });
 
-  trayIcon->show();
+  // trayIcon->show();
   /* ui.label->setPixmap(
        QPixmap(QString::fromLocal8Bit("./微信图片_20210320114323.png")));*/
 
   DPIMonitor::GetInstance()->setOriginalWindowSize(QSize(600, 400));
   REGISTERDPIOBJ()
   ("FramelessWindows", [this](double scale) { formInit(scale); });
+}
+
+FramelessWindows::~FramelessWindows() {
+  if (hWndDst) {
+    DwmUnregisterThumbnail(hWndDst);
+  }
 }
 
 bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
@@ -276,11 +317,61 @@ void FramelessWindows::closeEvent(QCloseEvent* event) {
 
 void FramelessWindows::formInit(double scale) {
   this->setMinimumSize(SCALEUP(600 * scale), SCALEUP(400 * scale));
-  ui.bt_close->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
-  ui.bt_maxmize->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
-  ui.bt_minmize->setFixedSize(SCALEUP(100 * scale), SCALEUP(30 * scale));
-  ui.comboBox->setFixedSize(SCALEUP(200 * scale), SCALEUP(30 * scale));
-  ui.widget_2->setFixedHeight(SCALEUP(30 * scale));
+
+  ui.widget_2->setStyleSheet(
+      QString::fromUtf8(
+          "QPushButton#bt_close,#bt_maxmize,#bt_minmize {\n"
+          "background-color: lightyellow;\n"
+          "border-style: outset;\n"
+          "border-width: %2px;\n"
+          "border-radius: %5px;\n"
+          "border-color: beige;\n"
+          "font: bold %6px;\n"
+          "min-width: %3em;\n"
+          "padding: %4px;\n"
+          "min-height:%1em;\n"
+          "}\n"
+          "QPushButton#bt_close:pressed,#bt_maxmize:pressed,#bt_minmize:"
+          "pressed {\n"
+          "background-color: rgb(224, 0, 0);\n"
+          "border-style: inset;\n"
+          "color:yellow;\n"
+          "}\n"
+          "QPushButton#bt_close:hover,#bt_maxmize:hover,#bt_minmize:hover{\n"
+          "color: lightblue;\n"
+          "}")
+          .arg(SCALEUP(1 * scale))
+          .arg(SCALEUP(2 * scale))
+          .arg(SCALEUP(5 * scale))
+          .arg(SCALEUP(6 * scale))
+          .arg(SCALEUP(10 * scale))
+          .arg(SCALEUP(14 * scale)));
+
+  ui.comboBox->setStyleSheet(
+      QString::fromUtf8("QComboBox{\n"
+                        "font: bold %4px;\n"
+                        "min-height:%1em;\n"
+                        "max-width:%2em;\n"
+                        "background-color:lightyellow;\n"
+                        "border:none;\n"
+                        "}\n"
+                        "QComboBox::drop-down{\n"
+                        "subcontrol-origin: padding;\n"
+                        "subcontrol-position: top right;\n"
+                        "width: %3px;\n"
+                        "border:none;\n"
+                        "}\n"
+                        "QComboBox QAbstractItemView {\n"
+                        "border: %1px solid darkgray;\n"
+                        "selection-background-color: lightgray;\n"
+                        "}\n"
+                        "QComboBox QAbstractItemView::item {\n"
+                        "height:%1em;\n"
+                        "}")
+          .arg(SCALEUP(2 * scale))
+          .arg(SCALEUP(10 * scale))
+          .arg(SCALEUP(15 * scale))
+          .arg(SCALEUP(14 * scale)));
 
   ui.label->setStyleSheet(
       QString::fromUtf8(
@@ -291,16 +382,6 @@ void FramelessWindows::formInit(double scale) {
       QString::fromUtf8(
           "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
           .arg(SCALEUP(33 * scale)));
-
-  QFont pushButtonFont = ui.bt_close->font();
-  pushButtonFont.setPointSize(SCALEUP(9 * scale));
-  ui.bt_close->setFont(pushButtonFont);
-  ui.bt_maxmize->setFont(pushButtonFont);
-  ui.bt_minmize->setFont(pushButtonFont);
-
-  QFont comboBoxFont = ui.comboBox->font();
-  comboBoxFont.setPointSize(SCALEUP(9 * scale));
-  ui.comboBox->setFont(comboBoxFont);
 
   borderSize = SCALEUP(borderSize * scale);
   // 防止托盘图标模糊

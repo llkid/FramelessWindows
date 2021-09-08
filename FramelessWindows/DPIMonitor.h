@@ -53,4 +53,4 @@ struct UNREGISTERDPIOBJ {
  * @brief 获取临近最大偶数
  */
 #define SCALEUP(param) \
-  (int)(param) + ((int)(param) == param ? 0 : ((int)(param) / 2 ? 1 : 0))
+  (int)(param) + (((param) - (int)(param)) < 0.5 ? 0 : 1)

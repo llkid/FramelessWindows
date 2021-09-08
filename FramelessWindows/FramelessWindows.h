@@ -12,6 +12,7 @@ class FramelessWindows : public QWidget {
 
  public:
   FramelessWindows(QWidget* parent = Q_NULLPTR);
+  ~FramelessWindows();
 
  private:
   Ui::FramelessWindowsClass ui;
@@ -28,4 +29,5 @@ class FramelessWindows : public QWidget {
  private:
   int borderSize;
   int max_min_count;
+  HWND hWndDst = NULL;
 };
