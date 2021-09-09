@@ -1,4 +1,6 @@
 <RCC>
-    <qresource prefix="FramelessWindows">
-    </qresource>
+  <qresource prefix="FramelessWindows">
+    <file>images/down.png</file>
+    <file>images/down.svg</file>
+  </qresource>
 </RCC>

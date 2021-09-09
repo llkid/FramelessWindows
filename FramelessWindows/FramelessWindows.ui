@@ -126,7 +126,13 @@ QComboBox::drop-down{
 subcontrol-origin: padding;
 subcontrol-position: top right;
 width: 15px;
+padding-right:6px;
 border:none;
+}
+QComboBox::down-arrow{
+image:url(:/FramelessWindows/images/down.svg);
+width: 15px;
+height:15px;
 }
 QComboBox QAbstractItemView {
 border: 2px solid darkgray;

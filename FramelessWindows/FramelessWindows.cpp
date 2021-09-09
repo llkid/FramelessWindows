@@ -22,7 +22,7 @@
 #include "DPIMonitor.h"
 
 FramelessWindows::FramelessWindows(QWidget* parent)
-    : QWidget(parent), borderSize(4), max_min_count(0) {
+    : QWidget(parent), max_min_count(0) {
   ui.setupUi(this);
 
   setWindowFlags(this->windowFlags() | Qt::FramelessWindowHint);
@@ -255,6 +255,7 @@ LRESULT FramelessWindows::calculateBorder(const QPoint& pt) {
   if (::IsZoomed((HWND)this->winId())) {
     return HTCLIENT;
   }
+  int borderSize = 4;
   int cx = this->size().width();
   int cy = this->size().height();
 
@@ -359,7 +360,13 @@ void FramelessWindows::formInit(double scale) {
                         "subcontrol-origin: padding;\n"
                         "subcontrol-position: top right;\n"
                         "width: %3px;\n"
+                        "padding-right:%5px;\n"
                         "border:none;\n"
+                        "}\n"
+                        "QComboBox::down-arrow{\n"
+                        "image:url(:/FramelessWindows/images/down.svg);\n"
+                        "width: %3px;\n"
+                        "height:%3px;\n"
                         "}\n"
                         "QComboBox QAbstractItemView {\n"
                         "border: %1px solid darkgray;\n"
@@ -371,7 +378,8 @@ void FramelessWindows::formInit(double scale) {
           .arg(SCALEUP(2 * scale))
           .arg(SCALEUP(10 * scale))
           .arg(SCALEUP(15 * scale))
-          .arg(SCALEUP(14 * scale)));
+          .arg(SCALEUP(14 * scale))
+          .arg(SCALEUP(6 * scale)));
 
   ui.label->setStyleSheet(
       QString::fromUtf8(
@@ -383,7 +391,6 @@ void FramelessWindows::formInit(double scale) {
           "font: %1px \"\345\276\256\350\275\257\351\233\205\351\273\221\";")
           .arg(SCALEUP(33 * scale)));
 
-  borderSize = SCALEUP(borderSize * scale);
   // ·ÀÖ¹ÍÐÅÌÍ¼±êÄ£ºý
   trayIcon->setIcon(qApp->style()->standardIcon(QStyle::SP_TitleBarMenuButton));
 }
