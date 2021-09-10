@@ -22,11 +22,12 @@ class FramelessWindows : public QWidget {
                    long* result) override;
   LRESULT calculateBorder(const QPoint& pt);
   void closeEvent(QCloseEvent* event) override;
+  void changeEvent(QEvent* ev) override;
 
  private:
   void formInit(double scale);
 
  private:
-  int max_min_count;
+  Qt::WindowStates oldState;
   HWND hWndDst = NULL;
 };

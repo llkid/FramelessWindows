@@ -25,11 +25,15 @@ class DPIMonitor : public QObject {
   double getMaxScalingFactor() const;
   void setMaxScalingFactor(double factor);
 
+  bool enableDpiScling() const;
+  void setEnableDpiScling(bool enable);
+
  private:
   static QScopedPointer<DPIMonitor> self;
   QHash<QString, std::function<void(double)>> widgetsScaltor;
   QSize originalWindowSize;
   double maxScalingFactor;
+  bool turnOnDpiScaling;
 
   private:
   DPIMonitor(QObject* parent = nullptr);

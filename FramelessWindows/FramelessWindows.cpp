@@ -6,6 +6,8 @@
 #include <qoperatingsystemversion.h>
 #include <qscreen.h>
 
+#include <QWindowStateChangeEvent>
+
 #ifdef Q_OS_WIN
 
 #include <dwmapi.h>
@@ -22,7 +24,7 @@
 #include "DPIMonitor.h"
 
 FramelessWindows::FramelessWindows(QWidget* parent)
-    : QWidget(parent), max_min_count(0) {
+    : QWidget(parent), oldState(Qt::WindowNoState) {
   ui.setupUi(this);
 
   setWindowFlags(this->windowFlags() | Qt::FramelessWindowHint);
@@ -81,32 +83,10 @@ FramelessWindows::FramelessWindows(QWidget* parent)
 #endif  // Q_OS_WIN
 
   connect(ui.bt_close, &QPushButton::clicked, this, &FramelessWindows::close);
-  connect(ui.bt_maxmize, &QPushButton::clicked, [this] {
-    /*auto hwnd = reinterpret_cast<HWND>(winId());
-    ShowWindow(hwnd, IsZoomed(hwnd) ? SW_SHOWNORMAL : SW_SHOWMAXIMIZED);*/
-    if (!this->isMaximized()) {
-      this->showMaximized();
-    } else {
-      this->showNormal();
-    }
-  });
-  connect(ui.bt_minmize, &QPushButton::clicked, [this] {
-    // ShowWindow(reinterpret_cast<HWND>(winId()), SW_SHOWMINIMIZED);
-    this->showMinimized();
-  });
-
-  auto current = QOperatingSystemVersion::current();
-  qDebug() << "SystemVersion" << current;
-  qDebug() << "majorVersion" << current.majorVersion();
-  qDebug() << "minorVersion" << current.minorVersion();
-  qDebug() << "microVersion" << current.microVersion();
-  qDebug() << "name" << current.name();
-  qDebug() << "segmentCount" << current.segmentCount();
-
-  bool on = current.isAnyOfType(
-      {QOperatingSystemVersion::Windows, QOperatingSystemVersion::MacOS,
-       QOperatingSystemVersion::IOS, QOperatingSystemVersion::Android});
-  qDebug() << (on ? "os type is right" : "os type is incorrect");
+  connect(ui.bt_minmize, &QPushButton::clicked, this,
+          &FramelessWindows::showMinimized);
+  connect(ui.bt_maxmize, &QPushButton::clicked,
+          [this] { isMaximized() ? showNormal() : showMaximized(); });
 
   trayIcon.reset(new QSystemTrayIcon(
       QApplication::style()->standardIcon(QStyle::SP_TitleBarMenuButton)));
@@ -133,19 +113,13 @@ FramelessWindows::FramelessWindows(QWidget* parent)
                 this->activateWindow();
                 this->show();
 
-#ifdef Q_OS_WIN
-                HWND setToHwnd = (HWND)winId();
-                HWND hForgroundWnd = GetForegroundWindow();
-                DWORD dwForeID =
-                    ::GetWindowThreadProcessId(hForgroundWnd, NULL);
-                DWORD dwCurID = ::GetCurrentThreadId();
-
-                ::AttachThreadInput(dwCurID, dwForeID, TRUE);
-                ::ShowWindow(setToHwnd, max_min_count > 0 ? SW_SHOWMAXIMIZED
-                                                          : SW_SHOWNORMAL);
-                ::SetForegroundWindow(setToHwnd);
-                ::AttachThreadInput(dwCurID, dwForeID, FALSE);
-#endif  // Q_WIN
+                if (isHidden() || isMinimized()) {
+                  if (oldState & Qt::WindowMaximized) {
+                    showMaximized();
+                  } else {
+                    showNormal();
+                  }
+                }
 
               } break;
               case QSystemTrayIcon::MiddleClick:
@@ -155,9 +129,7 @@ FramelessWindows::FramelessWindows(QWidget* parent)
             }
           });
 
-  // trayIcon->show();
-  /* ui.label->setPixmap(
-       QPixmap(QString::fromLocal8Bit("./Î¢ÐÅÍ¼Æ¬_20210320114323.png")));*/
+  //trayIcon->show();
 
   DPIMonitor::GetInstance()->setOriginalWindowSize(QSize(600, 400));
   REGISTERDPIOBJ()
@@ -199,23 +171,33 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
     }
 
     case WM_POWERBROADCAST: {
+      static bool is_hide;
+      static Qt::WindowStates current_state;
       if (msg->wParam == PBT_APMSUSPEND) {
-        this->showMinimized();
+        is_hide = this->isHidden();
+        if (!is_hide) {
+          current_state = this->windowState();
+          this->showMinimized();
+        }
         qDebug() << "PBT_APMSUSPEND";
       } else if (msg->wParam == PBT_APMRESUMEAUTOMATIC) {
-        this->raise();
-        this->activateWindow();
-        this->showNormal();
+        if (!is_hide) {
+          this->raise();
+          this->activateWindow();
+          if (current_state & Qt::WindowMaximized) {
+            this->showMaximized();
+          } else if (current_state == Qt::WindowMinimized) {
+            this->showMinimized();
+          } else {
+            this->showNormal();
+          }
+        }
         qDebug() << "PBT_APMRESUMEAUTOMATIC";
       }
     } break;
 
     case WM_GETMINMAXINFO: {
       if (::IsZoomed(msg->hwnd)) {
-        if (max_min_count == 0) {
-          ++max_min_count;
-        }
-
         RECT frame = {0, 0, 0, 0};
         AdjustWindowRectExForDpi(&frame, WS_OVERLAPPEDWINDOW, FALSE, 0,
                                  GetDpiForWindow(msg->hwnd));
@@ -226,14 +208,6 @@ bool FramelessWindows::nativeEvent(const QByteArray& eventType, void* message,
         *result =
             ::DefWindowProc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
         return true;
-      } else if (::IsIconic(msg->hwnd)) {
-        if (max_min_count > 0) {
-          ++max_min_count;
-        }
-      } else {
-        if (max_min_count > 0) {
-          max_min_count = 0;
-        }
       }
       this->setContentsMargins(0, 0, 0, 0);
       *result =
@@ -306,13 +280,15 @@ LRESULT FramelessWindows::calculateBorder(const QPoint& pt) {
 
 void FramelessWindows::closeEvent(QCloseEvent* event) {
   if (trayIcon->isVisible()) {
-    /*QMessageBox::information(this, tr("Systray"),
-        tr("The program will keep running in the "
-            "system tray. To terminate the program, "
-            "choose <b>Quit</b> in the context menu "
-            "of the system tray entry."));*/
+    setWindowState(Qt::WindowMinimized);
     hide();
     event->ignore();
+  }
+}
+
+void FramelessWindows::changeEvent(QEvent* ev) {
+  if (ev->type() == QEvent::WindowStateChange) {
+    oldState = static_cast<QWindowStateChangeEvent*>(ev)->oldState();
   }
 }
 
@@ -349,37 +325,64 @@ void FramelessWindows::formInit(double scale) {
           .arg(SCALEUP(14 * scale)));
 
   ui.comboBox->setStyleSheet(
-      QString::fromUtf8("QComboBox{\n"
-                        "font: bold %4px;\n"
-                        "min-height:%1em;\n"
-                        "max-width:%2em;\n"
-                        "background-color:lightyellow;\n"
-                        "border:none;\n"
-                        "}\n"
-                        "QComboBox::drop-down{\n"
-                        "subcontrol-origin: padding;\n"
-                        "subcontrol-position: top right;\n"
-                        "width: %3px;\n"
-                        "padding-right:%5px;\n"
-                        "border:none;\n"
-                        "}\n"
-                        "QComboBox::down-arrow{\n"
-                        "image:url(:/FramelessWindows/images/down.svg);\n"
-                        "width: %3px;\n"
-                        "height:%3px;\n"
-                        "}\n"
-                        "QComboBox QAbstractItemView {\n"
-                        "border: %1px solid darkgray;\n"
-                        "selection-background-color: lightgray;\n"
-                        "}\n"
-                        "QComboBox QAbstractItemView::item {\n"
-                        "height:%1em;\n"
-                        "}")
-          .arg(SCALEUP(2 * scale))
-          .arg(SCALEUP(10 * scale))
-          .arg(SCALEUP(15 * scale))
-          .arg(SCALEUP(14 * scale))
-          .arg(SCALEUP(6 * scale)));
+      QString::fromUtf8(
+          "QComboBox{\n"
+          "min-height:%2em;\n"
+          "max-width:%5em;\n"
+          "background-color:lightyellow;\n"
+          "border:none;\n"
+          "background:transparent;\n"
+          "color:#000;\n"
+          "font: bold italic %6px \"Microsoft YaHei\";\n"
+          "}\n"
+          "QComboBox::drop-down{\n"
+          "subcontrol-origin: padding;\n"
+          "subcontrol-position: top right;\n"
+          "width: %6px;\n"
+          "padding-right:%4px;\n"
+          "border:none;\n"
+          "}\n"
+          "QComboBox::down-arrow{\n"
+          "image:url(:/FramelessWindows/images/down.svg);\n"
+          "width: %6px;\n"
+          "height:%6px;\n"
+          "}\n"
+          "QComboBox QAbstractItemView {\n"
+          "outline:0px solid gray;\n"
+          "border: %1px solid darkgray;\n"
+          "background-color:yellowgreen;\n"
+          "selection-background-color: transparent;\n"
+          "}\n"
+          "QComboBox QAbstractItemView::item {\n"
+          "height:%7px;\n"
+          "}\n"
+          "QComboBox QAbstractItemView::item:hover {\n"
+          "color:#fff;\n"
+          "}\n"
+          "QComboBox QAbstractItemView::item:selected {\n"
+          "color:#fff;\n"
+          "}\n"
+          "QComboBox QAbstractScrollArea QScrollBar:vertical {\n"
+          "width: %5px;\n"
+          "border-radius: %3px;\n"
+          "background-color: #d0d2d4;\n"
+          "}\n"
+          "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"
+          "width: %5px;\n"
+          "border-radius: %3px;\n"
+          "background: rgb(160,160,160);\n"
+          "}\n"
+          "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"
+          "background: rgb(90, 91, 93);\n"
+          "}")
+          .arg(SCALEUP(1 * scale))       // 1
+          .arg(SCALEUP(2 * scale))       // 2
+          .arg(SCALEUP(10 * scale) / 2)  // 3
+          .arg(SCALEUP(6 * scale))       // 4
+          .arg(SCALEUP(10 * scale))      // 5
+          .arg(SCALEUP(15 * scale))      // 6
+          .arg(SCALEUP(25 * scale))      // 7
+  );
 
   ui.label->setStyleSheet(
       QString::fromUtf8(

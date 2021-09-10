@@ -90,11 +90,7 @@
     <QtMoc Include="FramelessWindows.h" />
     <ClCompile Include="DPIMonitor.cpp" />
     <ClCompile Include="FramelessWindows.cpp" />
-    <ClCompile Include="LineEdit.cpp" />
     <ClCompile Include="main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="LineEdit.h" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="DPIMonitor.h" />

@@ -40,17 +40,11 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LineEdit.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DPIMonitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="LineEdit.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
     <QtMoc Include="DPIMonitor.h">
       <Filter>Header Files</Filter>
     </QtMoc>

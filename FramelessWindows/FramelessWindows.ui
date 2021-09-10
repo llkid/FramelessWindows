@@ -121,6 +121,9 @@ min-height:2em;
 max-width:10em;
 background-color:lightyellow;
 border:none;
+background:transparent;
+color:#000;
+font: bold italic 15px &quot;Microsoft YaHei&quot;;
 }
 QComboBox::drop-down{
 subcontrol-origin: padding;
@@ -135,11 +138,32 @@ width: 15px;
 height:15px;
 }
 QComboBox QAbstractItemView {
-border: 2px solid darkgray;
-selection-background-color: lightgray;
+outline:0px solid gray;
+border: 1px solid darkgray;
+background-color:yellowgreen;
+selection-background-color: transparent;
 }
 QComboBox QAbstractItemView::item {
-height:2em;
+height:25px;
+}
+QComboBox QAbstractItemView::item:hover {
+color:#fff;
+}
+QComboBox QAbstractItemView::item:selected {
+color:#fff;
+}
+QComboBox QAbstractScrollArea QScrollBar:vertical {
+width: 10px;
+background-color: #d0d2d4;
+}
+
+QComboBox QAbstractScrollArea QScrollBar::handle:vertical {
+border-radius: 5px;
+background: rgb(160,160,160);
+}
+
+QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {
+background: rgb(90, 91, 93);
 }</string>
         </property>
         <item>
@@ -160,6 +184,56 @@ height:2em;
         <item>
          <property name="text">
           <string>kotlin</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>go</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>rust</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>c#</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>objective-c</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>javascript</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>matlab</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>php</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>erlang</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>css</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>html</string>
          </property>
         </item>
        </widget>
